@@ -1,4 +1,4 @@
-# PS-39 Evaluation Report — Offline-First Replicated Store with CRDTs
+v# PS-39 Evaluation Report — Offline-First Replicated Store with CRDTs
 
 ## 1. Implementation Under Evaluation
 
@@ -136,7 +136,7 @@ The reported trials had no convergence failures. This means no failures were obs
 - **Python version:** Python 3.11.9.
 - **Test suite:** `python -m pytest -q` — 41 passed in 4.22 seconds during the recorded verification run.
 - **Machine / CPU / RAM:** Not recorded yet; fill in the actual device specifications before submission.
-- **Benchmark commit/version:** Not available yet. `git rev-parse HEAD` returned `fatal: not a git repository`, so this project folder has not been initialised as a Git repository at the time of this check. Initialise Git and record the resulting commit hash before submission, or archive the exact submitted source.
+- **Benchmark source commit:** `e11cc4c2dfbd1f161e4f3feeada703ee4c05cfd0` (initial Git commit containing the implementation, tests, benchmark scripts, and benchmark result files). The evaluation report may be updated in a later documentation commit; this hash identifies the baseline source revision used for the recorded experiments.
 - **Dependencies:** See `requirements.txt`.
 
 ## 10. Conclusion
