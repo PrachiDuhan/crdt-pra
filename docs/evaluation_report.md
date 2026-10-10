@@ -132,12 +132,14 @@ The reported trials had no convergence failures. This means no failures were obs
 
 ## 9. Environment Record
 
-- **Operating system:** Windows 11 Home Single Language, version 25H2 (OS Build 26200.9550).
-- **Python version:** Python 3.11.9.
-- **Test suite:** `python -m pytest -q` — 41 passed in 4.22 seconds during the recorded verification run.
-- **Machine / CPU / RAM:** Not recorded yet; fill in the actual device specifications before submission.
-- **Benchmark source commit:** `e11cc4c2dfbd1f161e4f3feeada703ee4c05cfd0` (initial Git commit containing the implementation, tests, benchmark scripts, and benchmark result files). The evaluation report may be updated in a later documentation commit; this hash identifies the baseline source revision used for the recorded experiments.
+- **Operating system:** Windows 11 Home Single Language, version 25H2 (OS Build 26200.9550)
+- **Python version:** Python 3.11.9
+- **Processor:** 12th Gen Intel(R) Core(TM) i7-12650H
+- **Memory:** 16 GB RAM (PowerShell reports approximately 15.7 GiB of total physical memory)
 - **Dependencies:** See `requirements.txt`.
+- **Benchmark source revision:** `e11cc4c2dfbd1f161e4f3feeada703ee4c05cfd0`
+- **Public repository:** https://github.com/TechnoKhushal/replicated-store
+
 
 ## 10. Conclusion
 
