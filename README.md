@@ -139,3 +139,12 @@ requirements.txt        Python dependencies
 - Dependencies: [`requirements.txt`](requirements.txt)
 
 Machine CPU/RAM details should be recorded separately before final submission.
+
+
+## 🚀 Live Demo
+
+**[Launch the PS-39 Dashboard](https://replicated-store.streamlit.app)**
+
+Explore the five-replica simulator, test independent updates during network partitions, heal the network, and observe replica convergence. The dashboard also displays benchmark results comparing full-state and delta synchronisation.
+
+> **Note:** The replica network runs in a single Python process. This is a simulated distributed system, not a deployment across separate physical machines.
