@@ -1,0 +1,37 @@
+{
+  "experiment": {
+    "trials_per_mode": 500,
+    "base_seed": 10000,
+    "replicas": 5,
+    "purpose": "Extended randomized partition and recovery validation"
+  },
+  "full_state": {
+    "mode": "full",
+    "trials": 500,
+    "converged_trials": 500,
+    "convergence_rate_percent": 100.0,
+    "average_messages_sent_per_trial": 29.992,
+    "average_messages_delivered_per_trial": 34.534,
+    "average_payload_bytes_transmitted_per_trial": 20330.436,
+    "average_payload_bytes_delivered_per_trial": 23417.802,
+    "average_merge_latency_ms": 0.06252159029575469,
+    "p95_merge_latency_ms": 0.08899997919797897,
+    "maximum_recovery_rounds": 1,
+    "failed_trials": []
+  },
+  "delta": {
+    "mode": "delta",
+    "trials": 500,
+    "converged_trials": 500,
+    "convergence_rate_percent": 100.0,
+    "average_messages_sent_per_trial": 29.992,
+    "average_messages_delivered_per_trial": 34.534,
+    "average_payload_bytes_transmitted_per_trial": 18097.506,
+    "average_payload_bytes_delivered_per_trial": 20855.554,
+    "average_merge_latency_ms": 0.14259215259081287,
+    "p95_merge_latency_ms": 0.27870002668350935,
+    "maximum_recovery_rounds": 1,
+    "failed_trials": []
+  },
+  "delta_payload_reduction_percent": 10.983187965078566
+}
