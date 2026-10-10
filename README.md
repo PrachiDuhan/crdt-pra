@@ -1,26 +1,24 @@
 # PS-39: Offline-First Replicated Store with CRDTs
 
-An experimental, in-memory simulation of an offline-first replicated data store. Replicas maintain independent state and merge updates after reconnecting.
+An experimental offline-first replicated data-store prototype for the PS-39 challenge. Five simulated replicas can accept independent changes while partitioned, then merge their state after communication is restored. The project compares full-state synchronisation with delta synchronisation and includes a Streamlit dashboard, automated tests, and reproducible benchmark scripts.
 
-## Implemented components
+> **Scope:** this is an in-process Python simulation, not a production distributed database or a deployment across physical devices. Benchmark results below describe the tested simulator workloads only.
 
-- G-Counter for replicated counting
-- Observed-Remove Set (OR-Set) for additions/removals
-- Last-Writer-Wins Map (LWW-Map) with logical timestamps, replica-ID tie-breaking, and deletion tombstones
-- Five-replica network simulator with partitions, reordered delivery, duplicate delivery, and recovery
-- Full-state and delta synchronisation modes
-- Streamlit dashboard
-- Unit, generated/property-based, and randomised recovery tests
-- Benchmark comparison with JSON output
+## What is implemented
 
-## Requirements
+- **G-Counter** — a grow-only replicated counter.
+- **Observed-Remove Set (OR-Set)** — a replicated set supporting additions and removals.
+- **Last-Writer-Wins Map (LWW-Map)** — a replicated map that resolves competing writes deterministically using logical timestamps and replica-ID tie-breaking.
+- **Replica abstraction and local persistence** — per-replica CRDT state can be saved and restored.
+- **Five-replica network simulator** — simulates partitions, shuffled/reordered delivery, duplicated messages, and recovery after partitions heal.
+- **Two synchronisation modes** — full-state and delta.
+- **Streamlit dashboard** — visual inspection of replica state, network operations, conflicts, persistence, and benchmark results.
+- **Automated tests** — unit tests, Hypothesis-based property tests, network recovery tests, and persistence tests.
+- **Benchmark reports** — JSON outputs for the main comparison, scaling, incremental updates, and stress validation.
 
-- Python 3.10 or newer
-- pip
+## Quick start (Windows PowerShell)
 
-## Setup on Windows PowerShell
-
-From the project root:
+Use Python 3.10 or newer. From the project root:
 
 ```powershell
 python -m venv .venv
@@ -28,50 +26,116 @@ python -m venv .venv
 python -m pip install -r requirements.txt
 ```
 
-If PowerShell blocks activation, use a process-scoped execution-policy change for that terminal only:
+If PowerShell blocks activation, allow it only for the current terminal session:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .\.venv\Scripts\Activate.ps1
 ```
 
-## Run tests
-
-```powershell
-python -m pytest -q
-```
-
-`Hypothesis` generates additional state and operation sequences for CRDT merge-property tests. These tests are empirical and do not constitute a formal proof for every possible execution.
-
-## Run the dashboard
+### Run the dashboard
 
 ```powershell
 python -m streamlit run src/dashboard.py
 ```
 
-## Run the benchmark
+Open the local URL printed by Streamlit (normally `http://localhost:8501`). The dashboard lets you inspect replica data and experiment with the simulated network. For a partition-recovery demonstration, split the network, make independent changes on replicas in different groups, then heal the network and deliver pending messages. Verify that the replicas eventually hold the same logical CRDT state.
+
+### Run the tests
 
 ```powershell
-python benchmarks/run_benchmarks.py
+python -m pytest -q
 ```
 
-The benchmark uses paired scenario seeds for partition layouts and local updates. Results are saved to `benchmarks/comparison_results.json`.
+The recorded local verification run passed **41 tests**. Hypothesis generates additional input sequences, but property-based testing is empirical testing—not a formal proof for every possible operation sequence or message schedule.
 
-## Measurements and definitions
+## Reproduce the benchmarks
 
-- **Convergence rate:** proportion of trials where all replicas have equal logical state and no messages remain queued at the end.
-- **Payload bytes transmitted:** UTF-8 size of serialized message payloads queued by senders. It excludes transport headers and lower-level network overhead. Injected network duplicates do not count as new sender transmissions.
-- **Payload bytes delivered:** serialized payload bytes accepted by receivers, including duplicate deliveries.
-- **Merge latency:** local time spent merging an incoming snapshot/delta into the destination replica. It is not end-to-end network latency.
+Run these commands from the project root after installing the requirements:
 
-## Limitations
+| Experiment | Command | Results file |
+|---|---|---|
+| Main full-state vs delta comparison | `python benchmarks/run_benchmarks.py` | `benchmarks/comparison_results.json` |
+| Dataset-size scaling | `python benchmarks/run_scaling_benchmarks.py` | `benchmarks/scaling_results.json` |
+| One small update after initial convergence | `python benchmarks/run_incremental_update_benchmark.py` | `benchmarks/incremental_update_results.json` |
+| Extended 500-trial stress validation per mode | `python benchmarks/run_stress_validation.py` | `benchmarks/stress_results.json` |
 
-- The network is simulated in one Python process, not deployed across separate devices.
-- Results apply to tested seeds, workloads, and schedules; they are not proof over all possible schedules.
-- Delta synchronization currently tracks successfully delivered per-sender/per-receiver state in the simulator. A real network protocol would need explicit acknowledgements or an equivalent reliable anti-entropy protocol.
-- LWW-Map resolves concurrent writes with logical timestamp and replica-ID ordering; it does not preserve both concurrent values.
-- OR-Set and LWW-Map tombstones are retained; compaction and long-running storage growth are not implemented.
+Keep the generated JSON files with the code revision used for the experiment. Timings depend on machine load and runtime conditions; rerun the experiments before making claims about a changed implementation.
 
-## Reproducibility
+## Selected evaluation results
 
-Record the Python version, operating system, seed settings, number of trials, and benchmark JSON from the same code revision used in the demonstration. Re-run benchmarks after changing the synchronization algorithm; do not present results from an older build as if they came from the current build.
+### Main comparison — 100 trials per mode
+
+Five simulated replicas were tested in each mode. The configured scenarios include seeded partitions, independent local updates, duplicate delivery, shuffled message delivery, and recovery after partitions heal.
+
+| Metric | Full-state | Delta |
+|---|---:|---:|
+| Converged trials | 100 / 100 | 100 / 100 |
+| Convergence rate | 100.00% | 100.00% |
+| Average messages sent per trial | 29.96 | 29.96 |
+| Average transmitted payload bytes per trial | 20,331.64 | 18,098.35 |
+| Average merge latency | 0.076038 ms | 0.070094 ms |
+
+Delta transmitted **10.98% fewer serialised payload bytes** in this run. Message counts were the same. These merge timings are simulator measurements and should not be interpreted as end-to-end network latency.
+
+### Extended stress validation — 500 trials per mode
+
+| Metric | Full-state | Delta |
+|---|---:|---:|
+| Converged trials | 500 / 500 | 500 / 500 |
+| Convergence rate | 100.00% | 100.00% |
+| Average transmitted payload bytes per trial | 20,330.44 | 18,097.51 |
+| Average merge latency | 0.062522 ms | 0.142592 ms |
+
+No convergence failures were observed in these 1,000 sampled trials. Delta transmitted 10.98% fewer payload bytes, but its measured average merge latency was higher in this stress run.
+
+### Steady-state small update after initial convergence
+
+This OR-Set-focused experiment added one task on replica `r1` after the replicas were already synchronised.
+
+| Baseline items | Full-state bytes/update | Delta bytes/update | Payload reduction with delta | Messages: full vs delta |
+|---:|---:|---:|---:|---:|
+| 10 | 14,628 | 660 | 95.49% | 20 vs 4 |
+| 100 | 126,232 | 664 | 99.47% | 20 vs 4 |
+| 500 | 622,232 | 664 | 99.89% | 20 vs 4 |
+
+This experiment shows the bandwidth advantage of sending a small change after initial synchronisation in the tested workload. Latency results were mixed across dataset sizes, so the project does **not** claim that delta mode is always faster.
+
+See [`docs/evaluation_report.md`](docs/evaluation_report.md) for the full methodology, scaling results, metric definitions, environment record, and limitations.
+
+## Repository layout
+
+```text
+src/
+  crdts/              G-Counter, OR-Set, and LWW-Map implementations
+  replicas/           Replica abstraction
+  network/             In-memory network simulator
+  storage/             Local replica-state persistence
+  dashboard.py         Streamlit dashboard
+  demo_g_counter.py    Small G-Counter demo
+benchmarks/             Benchmark scripts and JSON result files
+tests/                  Unit, property-based, network, and persistence tests
+docs/
+  architecture.md       Architecture notes
+  evaluation_report.md  Detailed evaluation report
+requirements.txt        Python dependencies
+```
+
+## Design notes and limitations
+
+- All replicas and simulated message delivery run in one Python process; the project does not demonstrate communication between separate machines.
+- A successful convergence result means the tested replicas ended with the same logical state and no queued messages. It does not prove correctness for every possible schedule.
+- The simulator tracks delivered per-sender/per-receiver state for delta synchronisation. A real deployment would need explicit acknowledgements or an equivalent reliable anti-entropy protocol.
+- LWW-Map resolves concurrent writes deterministically and does not retain every concurrent value.
+- OR-Set and LWW-Map tombstones are retained; tombstone compaction and long-running storage-growth management are not implemented.
+- Local persistence stores individual replica state, not the complete simulator state or in-flight network queue.
+- Payload-byte figures measure serialised message payloads and exclude transport headers, encryption, and other network overhead.
+
+## Environment used for the recorded verification
+
+- OS: Windows 11 Home Single Language, version 25H2 (OS Build 26200.9550)
+- Python: 3.11.9
+- Automated tests: 41 passed in the recorded verification run
+- Dependencies: [`requirements.txt`](requirements.txt)
+
+Machine CPU/RAM details should be recorded separately before final submission.
