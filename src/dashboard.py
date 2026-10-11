@@ -57,7 +57,7 @@ with st.sidebar:
     ):
         reset_network(mode)
 
-    if st.button("Reset simulation", use_container_width=True):
+    if st.button("Reset simulation", width="stretch"):
         reset_network(mode)
 
 network = st.session_state.network
@@ -89,7 +89,7 @@ if change_type == "Increment counter":
         value=1,
     )
 
-    if st.sidebar.button("Apply increment", use_container_width=True):
+    if st.sidebar.button("Apply increment", width="stretch"):
         network.replicas[replica_id].counter.increment(int(amount))
         st.session_state.last_action = (
             f"{replica_id} incremented its counter by {amount}."
@@ -98,7 +98,7 @@ if change_type == "Increment counter":
 elif change_type in ("Add task", "Remove task"):
     task = st.sidebar.text_input("Task name", value="Emergency supplies")
 
-    if st.sidebar.button("Apply task change", use_container_width=True):
+    if st.sidebar.button("Apply task change", width="stretch"):
         if not task.strip():
             st.sidebar.error("Enter a task name.")
         else:
@@ -119,7 +119,7 @@ else:
     if change_type == "Set setting":
         value = st.sidebar.text_input("Setting value", value="dark")
 
-    if st.sidebar.button("Apply setting change", use_container_width=True):
+    if st.sidebar.button("Apply setting change", width="stretch"):
         if not key.strip():
             st.sidebar.error("Enter a setting key.")
         elif change_type == "Set setting":
@@ -144,7 +144,7 @@ st.caption(
 save_col, restore_col = st.columns(2)
 
 with save_col:
-    if st.button("Save selected replica", use_container_width=True):
+    if st.button("Save selected replica", width="stretch"):
         try:
             saved_path = save_replica(
                 network.replicas[replica_id],
@@ -158,7 +158,7 @@ with save_col:
             st.error(f"Could not save replica: {error}")
 
 with restore_col:
-    if st.button("Restore selected replica", use_container_width=True):
+    if st.button("Restore selected replica", width="stretch"):
         try:
             restored = load_replica(replica_id, STORAGE_DIR)
             network.replicas[replica_id] = restored
@@ -202,14 +202,14 @@ st.subheader("Network operations")
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
-    if st.button("Broadcast round", use_container_width=True):
+    if st.button("Broadcast round", width="stretch"):
         count = network.broadcast_round()
         st.session_state.last_action = (
             f"Queued {count} message(s)."
         )
 
 with col2:
-    if st.button("Deliver all reachable", use_container_width=True):
+    if st.button("Deliver all reachable", width="stretch"):
         count = network.deliver_all(
             random_order=True,
             seed=42,
@@ -219,7 +219,7 @@ with col2:
         )
 
 with col3:
-    if st.button("Split network", use_container_width=True):
+    if st.button("Split network", width="stretch"):
         network.set_partitions([
             ["r1", "r2"],
             ["r3", "r4", "r5"],
@@ -229,7 +229,7 @@ with col3:
         )
 
 with col4:
-    if st.button("Heal network", use_container_width=True):
+    if st.button("Heal network", width="stretch"):
         network.heal_partitions()
         st.session_state.last_action = (
             "All network links re-enabled. Broadcast to synchronise."
@@ -239,7 +239,7 @@ with col4:
 col1, col2 = st.columns(2)
 
 with col1:
-    if st.button("Duplicate first queued message", use_container_width=True):
+    if st.button("Duplicate first queued message", width="stretch"):
         if network.queue:
             network.duplicate_message(0)
             st.session_state.last_action = (
@@ -249,7 +249,7 @@ with col1:
             st.session_state.last_action = "No queued message to duplicate."
 
 with col2:
-    if st.button("Broadcast + deliver", use_container_width=True):
+    if st.button("Broadcast + deliver", width="stretch"):
         queued = network.broadcast_round()
         delivered = network.deliver_all(
             random_order=True,
@@ -358,7 +358,7 @@ else:
         with st.expander(f"Setting: {key}", expanded=True):
             st.dataframe(
                 details["candidates"],
-                use_container_width=True,
+                width="stretch",
                 hide_index=True,
             )
 
@@ -394,7 +394,7 @@ if network.queue:
 
     st.dataframe(
         queue_rows,
-        use_container_width=True,
+        width="stretch",
         hide_index=True,
     )
 
@@ -522,7 +522,7 @@ else:
         st.subheader("Measured results")
         st.dataframe(
             comparison_rows,
-            use_container_width=True,
+            width="stretch",
             hide_index=True,
         )
 
@@ -605,7 +605,7 @@ else:
             st.markdown("#### Benchmark results")
             st.dataframe(
                 display_df,
-                use_container_width=True,
+                width="stretch",
                 hide_index=True,
             )
 
@@ -616,7 +616,7 @@ else:
                 values="average_payload_bytes_transmitted",
             )
             payload_chart.index.name = "Baseline items"
-            st.bar_chart(payload_chart, use_container_width=True)
+            st.bar_chart(payload_chart, width="stretch")
 
             st.markdown("#### Messages sent per update")
             messages_chart = benchmark_df.pivot(
@@ -625,7 +625,7 @@ else:
                 values="average_messages_sent",
             )
             messages_chart.index.name = "Baseline items"
-            st.bar_chart(messages_chart, use_container_width=True)
+            st.bar_chart(messages_chart, width="stretch")
 
             st.markdown("#### Mean merge latency")
             latency_chart = benchmark_df.pivot(
@@ -634,7 +634,7 @@ else:
                 values="average_merge_latency_ms",
             )
             latency_chart.index.name = "Baseline items"
-            st.bar_chart(latency_chart, use_container_width=True)
+            st.bar_chart(latency_chart, width="stretch")
 
             reductions = benchmark_report.get(
                 "payload_reduction_percent", {}
@@ -652,7 +652,7 @@ else:
             st.markdown("#### Bandwidth saved by delta synchronisation")
             st.dataframe(
                 reduction_df,
-                use_container_width=True,
+                width="stretch",
                 hide_index=True,
             )
 
