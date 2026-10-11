@@ -118,6 +118,14 @@ class NetworkSimulator:
             if unseen:
                 adds_delta[value] = sorted(unseen)
 
+        # Ordering metadata travels with every previously undelivered add tag.
+        local_order = local["task_set"].get("add_order", {})
+        add_order_delta = {
+            tag: local_order[tag]
+            for tags in adds_delta.values()
+            for tag in tags
+        }
+
         removed_delta = sorted(
             set(local["task_set"]["removed_tags"])
             - set(known["task_set"]["removed_tags"])
@@ -148,6 +156,7 @@ class NetworkSimulator:
             "task_set": {
                 "adds": adds_delta,
                 "removed_tags": removed_delta,
+                "add_order": add_order_delta,
             },
             "settings": {"entries": entries_delta},
         }
@@ -167,6 +176,7 @@ class NetworkSimulator:
                 not state["counter"]
                 and not state["task_set"]["adds"]
                 and not state["task_set"]["removed_tags"]
+                and not state["task_set"].get("add_order", {})
                 and not state["settings"]["entries"]
             )
             if is_empty:

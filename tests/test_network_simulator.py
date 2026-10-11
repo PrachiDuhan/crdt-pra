@@ -375,3 +375,55 @@ def test_reversed_delivery_order_does_not_change_lww_winner():
         final_states.append(network.replicas["r1"].settings.get("status"))
 
     assert final_states == ["from-r5", "from-r5"]
+
+
+
+def test_task_addition_order_converges_in_full_and_delta_modes():
+    expected = ["dipanshu", "prachi", "ayush", "khushal"]
+
+    for mode in ("full", "delta"):
+        network = make_network(sync_mode=mode)
+        for name in expected:
+            network.replicas["r1"].task_set.add(name)
+
+        for round_number in range(5):
+            network.broadcast_round()
+            network.deliver_all(random_order=True, seed=9100 + round_number)
+            if network.all_replicas_converged() and not network.queue:
+                break
+
+        assert network.all_replicas_converged()
+        for replica in network.replicas.values():
+            assert replica.task_set.ordered_values == expected
+
+
+
+def test_addition_time_order_survives_partition_and_heal():
+    """Independent task additions retain their timestamp order after healing."""
+    expected = ["dipanshu", "prachi", "ayush", "khushal"]
+
+    for mode in ("full", "delta"):
+        network = make_network(sync_mode=mode)
+        network.set_partitions([["r1", "r3"], ["r2", "r4", "r5"]])
+
+        # Each task is created on a different replica while the network is split.
+        network.replicas["r1"].task_set.add("dipanshu")
+        network.replicas["r4"].task_set.add("prachi")
+        network.replicas["r2"].task_set.add("ayush")
+        network.replicas["r5"].task_set.add("khushal")
+
+        # Synchronize within the current partitions, then reconnect everyone.
+        for round_number in range(2):
+            network.broadcast_round()
+            network.deliver_all(random_order=True, seed=8200 + round_number)
+
+        network.heal_partitions()
+        for round_number in range(12):
+            network.broadcast_round()
+            network.deliver_all(random_order=True, seed=8300 + round_number)
+            if network.all_replicas_converged() and not network.queue:
+                break
+
+        assert network.all_replicas_converged()
+        for replica in network.replicas.values():
+            assert replica.task_set.ordered_values == expected

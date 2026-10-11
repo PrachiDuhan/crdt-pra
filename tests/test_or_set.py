@@ -62,3 +62,67 @@ def test_concurrent_add_survives_an_unobserved_remove():
 
     assert bob.values == {"Milk"}
     assert bob.state == alice.state
+
+
+
+def test_ordered_values_preserve_local_addition_order():
+    replica = ORSet("alice")
+    expected = ["dipanshu", "prachi", "ayush", "khushal"]
+
+    for name in expected:
+        replica.add(name)
+
+    assert replica.ordered_values == expected
+
+
+def test_ordered_values_preserve_causal_order_after_merge():
+    alice = ORSet("alice")
+    bob = ORSet("bob")
+
+    alice.add("dipanshu")
+    bob.merge_state(alice.state)
+    bob.add("prachi")
+    alice.merge_state(bob.state)
+    bob.merge_state(alice.state)
+
+    assert alice.ordered_values == ["dipanshu", "prachi"]
+    assert bob.ordered_values == alice.ordered_values
+    assert bob.state == alice.state
+
+
+def test_concurrent_additions_have_deterministic_order():
+    alice = ORSet("alice")
+    bob = ORSet("bob")
+    alice.add("from alice")
+    bob.add("from bob")
+
+    alice.merge_state(bob.state)
+    bob.merge_state(alice.state)
+
+    assert alice.ordered_values == ["from alice", "from bob"]
+    assert bob.ordered_values == alice.ordered_values
+    assert bob.state == alice.state
+
+
+def test_readded_value_uses_new_active_addition_order():
+    replica = ORSet("alice")
+    replica.add("dipanshu")
+    replica.add("prachi")
+    replica.remove("dipanshu")
+    replica.add("dipanshu")
+
+    assert replica.ordered_values == ["prachi", "dipanshu"]
+
+def test_sequential_additions_on_different_replicas_keep_process_order():
+    """Fast sequential calls stay ordered even if the OS clock has coarse resolution."""
+    first = ORSet("r4")
+    second = ORSet("r2")
+
+    first.add("prachi")
+    second.add("ayush")
+
+    first.merge_state(second.state)
+    second.merge_state(first.state)
+
+    assert first.ordered_values == ["prachi", "ayush"]
+    assert second.ordered_values == ["prachi", "ayush"]

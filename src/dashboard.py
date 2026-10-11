@@ -284,7 +284,7 @@ for column, rid in zip(columns, REPLICA_IDS):
         st.metric("Counter", replica.counter.value)
 
         with st.expander("Tasks"):
-            st.write(sorted(replica.task_set.values))
+            st.write(replica.task_set.ordered_values)
 
         with st.expander("Settings"):
             st.json(replica.settings.items)

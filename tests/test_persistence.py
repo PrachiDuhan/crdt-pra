@@ -127,3 +127,17 @@ def test_restored_replica_resynchronises_with_peers(tmp_path, mode):
             "theme": "blue",
             "language": "English",
         }
+
+
+
+def test_task_order_survives_save_and_restore(tmp_path):
+    original = Replica("ordered-replica")
+    expected = ["dipanshu", "prachi", "ayush", "khushal"]
+    for name in expected:
+        original.task_set.add(name)
+
+    save_replica(original, tmp_path)
+    restored = load_replica("ordered-replica", tmp_path)
+
+    assert restored.task_set.ordered_values == expected
+    assert restored.snapshot() == original.snapshot()
