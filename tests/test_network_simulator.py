@@ -309,3 +309,69 @@ def test_transmission_bytes_count_packets_even_if_later_blocked():
     assert network.deliver(0) is False
     assert network.bytes_transmitted == sent_bytes
     assert network.bytes_delivered == 0
+
+
+def test_concurrent_lww_writes_converge_after_heal_in_both_modes():
+    """Concurrent same-key writes resolve identically regardless of delivery order."""
+    for mode in ("full", "delta"):
+        for seed in (11, 29):
+            network = make_network(sync_mode=mode)
+            network.set_partitions([["r1", "r2"], ["r3", "r4", "r5"]])
+
+            # Same logical timestamp, distinct writers: lexicographically later
+            # replica ID is the documented deterministic tie-break winner.
+            network.replicas["r1"].settings.put("theme", "blue")
+            network.replicas["r4"].settings.put("theme", "red")
+
+            for round_number in range(2):
+                network.broadcast_round()
+                network.deliver_all(
+                    random_order=True,
+                    seed=seed + round_number,
+                )
+
+            assert not network.all_replicas_converged()
+            network.heal_partitions()
+
+            for round_number in range(10):
+                network.broadcast_round()
+                # Duplicate a queued message when available, exercising
+                # idempotence alongside shuffled delivery.
+                if network.queue:
+                    network.duplicate_message(0)
+                network.deliver_all(
+                    random_order=True,
+                    seed=seed * 100 + round_number,
+                )
+                if network.all_replicas_converged() and not network.queue:
+                    break
+
+            assert network.all_replicas_converged(), (mode, seed)
+            assert all(
+                replica.settings.get("theme") == "red"
+                for replica in network.replicas.values()
+            )
+
+
+def test_reversed_delivery_order_does_not_change_lww_winner():
+    """Two replicas converge to the same LWW value under opposite delivery orders."""
+    final_states = []
+    for reverse in (False, True):
+        network = make_network(sync_mode="full")
+        network.replicas["r1"].settings.put("status", "from-r1")
+        network.replicas["r5"].settings.put("status", "from-r5")
+        network.broadcast_round()
+
+        # Reverse the queued order in one run to perturb delivery ordering.
+        if reverse:
+            network.queue.reverse()
+        network.deliver_all(random_order=False)
+
+        for _ in range(3):
+            network.broadcast_round()
+            network.deliver_all(random_order=reverse, seed=101 if reverse else 202)
+
+        assert network.all_replicas_converged()
+        final_states.append(network.replicas["r1"].settings.get("status"))
+
+    assert final_states == ["from-r5", "from-r5"]
