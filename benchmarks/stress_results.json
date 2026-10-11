@@ -14,8 +14,8 @@
     "average_messages_delivered_per_trial": 34.534,
     "average_payload_bytes_transmitted_per_trial": 20330.436,
     "average_payload_bytes_delivered_per_trial": 23417.802,
-    "average_merge_latency_ms": 0.06252159029575469,
-    "p95_merge_latency_ms": 0.08899997919797897,
+    "average_merge_latency_ms": 0.06386769562571327,
+    "p95_merge_latency_ms": 0.096399977337569,
     "maximum_recovery_rounds": 1,
     "failed_trials": []
   },
@@ -28,8 +28,8 @@
     "average_messages_delivered_per_trial": 34.534,
     "average_payload_bytes_transmitted_per_trial": 18097.506,
     "average_payload_bytes_delivered_per_trial": 20855.554,
-    "average_merge_latency_ms": 0.14259215259081287,
-    "p95_merge_latency_ms": 0.27870002668350935,
+    "average_merge_latency_ms": 0.061058458165192966,
+    "p95_merge_latency_ms": 0.0847000046633184,
     "maximum_recovery_rounds": 1,
     "failed_trials": []
   },
