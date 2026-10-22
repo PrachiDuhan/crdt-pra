@@ -166,19 +166,7 @@ with restore_col:
             # In delta mode, force fresh synchronisation knowledge
             # for every connection involving this restored replica.
             if network.sync_mode == "delta":
-                for sender in REPLICA_IDS:
-                    for receiver in REPLICA_IDS:
-                        if (
-                            sender != receiver
-                            and (
-                                sender == replica_id
-                                or receiver == replica_id
-                            )
-                        ):
-                            known_id = f"__known__{sender}__{receiver}"
-                            network.peer_known_states[
-                                (sender, receiver)
-                            ] = Replica(known_id)
+                network.reset_peer_knowledge(replica_id)
 
             st.session_state.last_action = (
                 f"Restored {replica_id}. "
@@ -264,12 +252,13 @@ st.info(st.session_state.get("last_action", "Simulation ready."))
 
 converged = network.all_replicas_converged()
 
-m1, m2, m3, m4 = st.columns(4)
+m1, m2, m3, m4, m5 = st.columns(5)
 
 m1.metric("Replicas", len(network.replicas))
 m2.metric("Converged", "Yes" if converged else "No")
 m3.metric("Queued messages", len(network.queue))
 m4.metric("Payload bytes sent", network.bytes_transmitted)
+m5.metric("Pending deltas", network.pending_delta_count() if network.sync_mode == "delta" else "N/A")
 
 st.subheader("Replica states")
 
@@ -381,8 +370,10 @@ if network.queue:
     queue_rows = [
         {
             "Index": index,
+            "Type": message.msg_type.upper(),
             "Sender": message.sender,
             "Receiver": message.receiver,
+            "ID / ACK-For": message.ack_for if message.msg_type == "ack" else message.msg_id[:18],
             "Payload bytes": message.size_bytes,
             "Link available": (
                 network._groups[message.sender]
@@ -406,14 +397,29 @@ if network.queue:
         step=1,
     )
 
-    if st.button("Deliver selected message"):
-        delivered = network.deliver(int(message_index))
-
-        st.session_state.last_action = (
-            "Message delivered successfully."
-            if delivered
-            else "Delivery blocked by the network partition."
-        )
+    del_col1, del_col2, del_col3 = st.columns(3)
+    with del_col1:
+        if st.button("Deliver selected message", width="stretch"):
+            delivered = network.deliver(int(message_index))
+            st.session_state.last_action = (
+                "Message delivered successfully."
+                if delivered
+                else "Delivery blocked by the network partition."
+            )
+    with del_col2:
+        if st.button("Drop selected message", width="stretch"):
+            dropped = network.drop_message(int(message_index))
+            st.session_state.last_action = (
+                f"Dropped {dropped.msg_type.upper()} message at index {message_index}."
+            )
+    with del_col3:
+        if st.button("Drop first queued ACK", width="stretch"):
+            dropped = network.drop_first_ack()
+            st.session_state.last_action = (
+                f"Dropped ACK for message '{dropped.ack_for}'."
+                if dropped
+                else "No ACK message currently waiting in the queue."
+            )
 else:
     st.write("No messages are waiting in the queue.")
 
@@ -421,11 +427,20 @@ st.subheader("Merge performance")
 
 metrics = network.metrics
 
-c1, c2, c3 = st.columns(3)
+c1, c2, c3, c4 = st.columns(4)
 
-c1.metric("Messages delivered", metrics["messages_delivered"])
-c2.metric("Average merge latency (ms)", f"{metrics['average_merge_latency_ms']:.6f}")
-c3.metric("Payload bytes transmitted", network.bytes_transmitted)
+c1.metric("Data delivered", metrics["messages_delivered"])
+c2.metric("ACKs delivered", metrics["ack_messages_delivered"])
+c3.metric("Avg merge latency (ms)", f"{metrics['average_merge_latency_ms']:.6f}")
+c4.metric("Data bytes sent", network.bytes_transmitted)
+
+if network.sync_mode == "delta":
+    st.caption(
+        f"ACK traffic: {metrics['ack_messages_sent']} sent, "
+        f"{metrics['ack_messages_delivered']} delivered, "
+        f"{metrics['ack_bytes_transmitted']} bytes sent, "
+        f"{metrics['ack_bytes_delivered']} bytes delivered."
+    )
 
 st.caption(
     "This is a simulator: payload counts cover serialised message data, "

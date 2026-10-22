@@ -13,7 +13,7 @@ An experimental offline-first replicated data-store prototype for the PS-39 chal
 - **Last-Writer-Wins Map (LWW-Map)** — a replicated map that resolves competing writes deterministically using logical timestamps and replica-ID tie-breaking.
 - **Replica abstraction and local persistence** — per-replica CRDT state can be saved and restored.
 - **Five-replica network simulator** — simulates partitions, shuffled/reordered delivery, duplicated messages, and recovery after partitions heal.
-- **Two synchronisation modes** — full-state and delta.
+- **Two synchronisation modes** — full-state and acknowledged delta synchronisation (with explicit network ACKs, unique message IDs, and safe retries under loss; see [`docs/acknowledged_delta_sync.md`](docs/acknowledged_delta_sync.md)).
 - **Streamlit dashboard** — visual inspection of replica state, network operations, conflicts, persistence, and benchmark results.
 - **Automated tests** — unit tests, Hypothesis-based property tests, network recovery tests, and persistence tests. GitHub Actions runs the test suite on pushes to `main` and pull requests targeting `main`.
 - **Benchmark reports** — JSON outputs for the main comparison, scaling, incremental updates, and stress validation.
@@ -118,6 +118,7 @@ src/
 benchmarks/            Benchmark scripts and JSON result files
 tests/                 Unit, property-based, network, and persistence tests
 docs/
+  acknowledged_delta_sync.md Acknowledged delta protocol specification
   architecture.md      Architecture notes
   evaluation_report.md Detailed evaluation report
 .github/workflows/
